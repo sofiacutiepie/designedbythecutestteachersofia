@@ -1,0 +1,1338 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TOCFL A1 Mandarin Review & Practice App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Poppins', 'Noto Sans TC', 'sans-serif'],
+                        chinese: ['Noto Sans TC', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            800: '#166534',
+                        },
+                        taiwan: {
+                            blue: '#00247D',
+                            red: '#FE0000',
+                            teal: '#0d9488'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+        .transform-style-3d {
+            transform-style: preserve-3d;
+        }
+        .backface-hidden {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+        .rotate-y-180 {
+            transform: rotateY(180deg);
+        }
+        .card-inner {
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card-inner.is-flipped {
+            transform: rotateY(180deg);
+        }
+        
+        /* Smooth tab animation */
+        .tab-panel {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.25s ease-in-out;
+        }
+        .tab-panel.active {
+            display: block;
+            opacity: 1;
+        }
+
+        /* Stroke animation canvas grid */
+        .mi-zi-ge {
+            background-image: 
+                linear-gradient(to right, rgba(226, 232, 240, 0.6) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(226, 232, 240, 0.6) 1px, transparent 1px),
+                linear-gradient(to top right, transparent calc(50% - 1px), rgba(226, 232, 240, 0.5) 50%, transparent calc(50% + 1px)),
+                linear-gradient(to bottom right, transparent calc(50% - 1px), rgba(226, 232, 240, 0.5) 50%, transparent calc(50% + 1px));
+            background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+        }
+    </style>
+</head>
+<body class="h-full text-slate-800 flex flex-col font-sans bg-slate-50 selection:bg-teal-100 selection:text-teal-800">
+
+    <!-- Top Navigation Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <!-- App Logo & Title -->
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-teal-600 text-white flex items-center justify-center font-chinese font-bold text-xl shadow-md shadow-teal-600/20">
+                        華
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-slate-800 text-lg leading-tight flex items-center gap-2">
+                            TOCFL A1 Mandarin Review
+                            <span class="text-xs px-2 py-0.5 rounded-full bg-teal-100 text-teal-800 font-medium">Taiwan Novice 1</span>
+                        </h1>
+                        <p class="text-xs text-slate-500 hidden sm:block">Master Core 500 Vocabulary, Stroke Order & Grammar Patterns</p>
+                    </div>
+                </div>
+
+                <!-- Global Stats & Reset Quick Button -->
+                <div class="flex items-center gap-3">
+                    <div class="hidden md:flex items-center gap-4 text-xs font-medium text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
+                        <span title="Mastered Flashcards"><i class="fa-solid fa-circle-check text-green-500 mr-1"></i> Mastered: <b id="globalMasteredCount">0</b></span>
+                        <span title="Sentence Score"><i class="fa-solid fa-star text-amber-500 mr-1"></i> Accuracy: <b id="globalScorePercent">0%</b></span>
+                    </div>
+                    <button onclick="resetAllAppData()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg font-medium transition flex items-center gap-1.5 border border-slate-200">
+                        <i class="fa-solid fa-rotate"></i>
+                        <span class="hidden sm:inline">Reset All</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="bg-slate-100/80 border-t border-slate-200 overflow-x-auto no-scrollbar">
+            <div class="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 flex space-x-1 sm:space-x-2 py-2 min-w-max">
+                <button onclick="switchTab('tab1')" id="nav-tab1" class="tab-btn px-3.5 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 bg-teal-600 text-white shadow-sm">
+                    <i class="fa-solid fa-language"></i> English → Character
+                </button>
+                <button onclick="switchTab('tab2')" id="nav-tab2" class="tab-btn px-3.5 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 text-slate-600 hover:bg-slate-200/70">
+                    <i class="fa-solid fa-font"></i> Character → Pinyin
+                </button>
+                <button onclick="switchTab('tab3')" id="nav-tab3" class="tab-btn px-3.5 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 text-slate-600 hover:bg-slate-200/70">
+                    <i class="fa-solid fa-pen-nib"></i> Stroke Order (筆順)
+                </button>
+                <button onclick="switchTab('tab4')" id="nav-tab4" class="tab-btn px-3.5 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 text-slate-600 hover:bg-slate-200/70">
+                    <i class="fa-solid fa-puzzle-piece"></i> Sentence Builder
+                </button>
+                <button onclick="switchTab('tab5')" id="nav-tab5" class="tab-btn px-3.5 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 text-slate-600 hover:bg-slate-200/70">
+                    <i class="fa-solid fa-clipboard-check"></i> Practice Test
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+
+        <!-- TAB 1: English -> Character & Pinyin Flashcards -->
+        <section id="tab1" class="tab-panel active space-y-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800">English to Character Flashcards</h2>
+                    <p class="text-xs text-slate-500">Read the English prompt, recall the Traditional Chinese character & pronunciation, then click to flip.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                    <select id="t1CategoryFilter" onchange="filterFlashcards('t1')" class="bg-slate-50 border border-slate-300 text-slate-700 text-xs rounded-lg p-2 focus:ring-teal-500 focus:border-teal-500">
+                        <option value="all">All Categories</option>
+                        <option value="greetings">Greetings & Personal</option>
+                        <option value="food">Food & Dining</option>
+                        <option value="places">Places & Transport</option>
+                        <option value="actions">Daily Actions</option>
+                        <option value="time">Time & Calendar</option>
+                    </select>
+                    <button onclick="shuffleFlashcards('t1')" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition border border-slate-200 flex items-center gap-1.5">
+                        <i class="fa-solid fa-shuffle"></i> Shuffle
+                    </button>
+                </div>
+            </div>
+
+            <!-- Flashcard Display Area -->
+            <div class="max-w-xl mx-auto">
+                <div class="perspective-1000 w-full h-80 cursor-pointer group" onclick="flipCard('t1Card')">
+                    <div id="t1Card" class="card-inner relative w-full h-full transform-style-3d shadow-xl rounded-2xl border border-slate-200/80 bg-white">
+                        <!-- FRONT SIDE (English) -->
+                        <div class="absolute inset-0 w-full h-full backface-hidden rounded-2xl p-6 flex flex-col justify-between items-center text-center bg-gradient-to-b from-white to-slate-50/80 border border-slate-100">
+                            <div class="w-full flex justify-between items-center text-xs font-medium text-slate-400">
+                                <span id="t1CategoryBadge" class="bg-teal-50 text-teal-700 px-2.5 py-1 rounded-full uppercase tracking-wider text-[10px] font-bold border border-teal-200/50">Category</span>
+                                <span id="t1CardProgress">1 / 20</span>
+                            </div>
+                            
+                            <div class="my-auto space-y-2">
+                                <span class="text-xs font-semibold uppercase tracking-widest text-slate-400">English Meaning</span>
+                                <h3 id="t1EnglishText" class="text-3xl sm:text-4xl font-bold text-slate-800">Hello / Hi</h3>
+                                <p id="t1HintText" class="text-xs text-slate-400 italic">Click card or spacebar to reveal Chinese</p>
+                            </div>
+
+                            <div class="text-xs text-slate-400 flex items-center gap-1">
+                                <i class="fa-solid fa-rotate text-teal-600"></i> Click anywhere to flip card
+                            </div>
+                        </div>
+
+                        <!-- BACK SIDE (Chinese + Pinyin + Audio) -->
+                        <div class="absolute inset-0 w-full h-full backface-hidden rotate-y-180 rounded-2xl p-6 flex flex-col justify-between items-center text-center bg-teal-800 text-white shadow-inner">
+                            <div class="w-full flex justify-between items-center text-xs font-medium text-teal-200">
+                                <span>Traditional Chinese (繁體)</span>
+                                <button onclick="event.stopPropagation(); speakCurrentCard('t1')" class="w-8 h-8 rounded-full bg-teal-700/80 hover:bg-teal-600 flex items-center justify-center text-white transition" title="Listen Audio">
+                                    <i class="fa-solid fa-volume-high"></i>
+                                </button>
+                            </div>
+
+                            <div class="my-auto space-y-3">
+                                <h3 id="t1ChineseText" class="text-6xl sm:text-7xl font-bold font-chinese tracking-wide text-amber-300">你好</h3>
+                                <div id="t1PinyinText" class="text-xl sm:text-2xl text-teal-100 font-medium">nǐ hǎo</div>
+                                <div id="t1SampleSentence" class="text-xs text-teal-200/90 max-w-xs mx-auto italic font-chinese">你好！很高興認識你。</div>
+                            </div>
+
+                            <div class="w-full pt-2 border-t border-teal-700/60 flex justify-center gap-3">
+                                <button onclick="event.stopPropagation(); markMastered('t1')" id="t1MasterBtn" class="px-4 py-1.5 rounded-full text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white transition flex items-center gap-1 shadow">
+                                    <i class="fa-solid fa-check"></i> Mastered
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Flashcard Navigation Controls -->
+                <div class="flex items-center justify-between mt-6 px-2">
+                    <button onclick="prevCard('t1')" class="px-5 py-2.5 bg-white hover:bg-slate-100 text-slate-700 rounded-xl font-semibold border border-slate-200 transition shadow-sm flex items-center gap-2">
+                        <i class="fa-solid fa-arrow-left"></i> Previous
+                    </button>
+                    <span id="t1StatusText" class="text-xs font-medium text-slate-500">Card 1 of 20</span>
+                    <button onclick="nextCard('t1')" class="px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-semibold transition shadow-md shadow-teal-600/20 flex items-center gap-2">
+                        Next <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: Character -> Pinyin Flashcards -->
+        <section id="tab2" class="tab-panel space-y-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800">Character to Pinyin Flashcards</h2>
+                    <p class="text-xs text-slate-500">Test your Chinese character reading skill. See the character, pronounce it in your mind, then check Pinyin.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                    <select id="t2CategoryFilter" onchange="filterFlashcards('t2')" class="bg-slate-50 border border-slate-300 text-slate-700 text-xs rounded-lg p-2 focus:ring-teal-500">
+                        <option value="all">All Categories</option>
+                        <option value="greetings">Greetings & Personal</option>
+                        <option value="food">Food & Dining</option>
+                        <option value="places">Places & Transport</option>
+                        <option value="actions">Daily Actions</option>
+                        <option value="time">Time & Calendar</option>
+                    </select>
+                    <button onclick="shuffleFlashcards('t2')" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-lg transition border border-slate-200 flex items-center gap-1.5">
+                        <i class="fa-solid fa-shuffle"></i> Shuffle
+                    </button>
+                </div>
+            </div>
+
+            <!-- Card Display -->
+            <div class="max-w-xl mx-auto">
+                <div class="perspective-1000 w-full h-80 cursor-pointer group" onclick="flipCard('t2Card')">
+                    <div id="t2Card" class="card-inner relative w-full h-full transform-style-3d shadow-xl rounded-2xl border border-slate-200/80 bg-white">
+                        <!-- FRONT SIDE (Character First) -->
+                        <div class="absolute inset-0 w-full h-full backface-hidden rounded-2xl p-6 flex flex-col justify-between items-center text-center bg-gradient-to-b from-slate-900 to-slate-800 text-white">
+                            <div class="w-full flex justify-between items-center text-xs font-medium text-slate-400">
+                                <span id="t2CategoryBadge" class="bg-slate-800 text-amber-400 px-2.5 py-1 rounded-full uppercase tracking-wider text-[10px] font-bold border border-slate-700">Category</span>
+                                <span id="t2CardProgress">1 / 20</span>
+                            </div>
+
+                            <div class="my-auto space-y-2">
+                                <h3 id="t2ChineseText" class="text-7xl sm:text-8xl font-bold font-chinese text-teal-400 drop-shadow">謝謝</h3>
+                                <p class="text-xs text-slate-400 italic">Click card to check Pinyin & English</p>
+                            </div>
+
+                            <div class="text-xs text-slate-400 flex items-center gap-1">
+                                <i class="fa-solid fa-volume-high text-teal-400"></i> Tap card to flip & listen
+                            </div>
+                        </div>
+
+                        <!-- BACK SIDE (Pinyin + English) -->
+                        <div class="absolute inset-0 w-full h-full backface-hidden rotate-y-180 rounded-2xl p-6 flex flex-col justify-between items-center text-center bg-white border border-slate-200">
+                            <div class="w-full flex justify-between items-center text-xs font-medium text-slate-500">
+                                <span class="font-bold text-teal-700">Pronunciation & Meaning</span>
+                                <button onclick="event.stopPropagation(); speakCurrentCard('t2')" class="w-8 h-8 rounded-full bg-teal-100 hover:bg-teal-200 text-teal-800 flex items-center justify-center transition" title="Listen Audio">
+                                    <i class="fa-solid fa-volume-high"></i>
+                                </button>
+                            </div>
+
+                            <div class="my-auto space-y-2">
+                                <div id="t2PinyinText" class="text-3xl font-bold text-teal-700">xiè xie</div>
+                                <h4 id="t2EnglishText" class="text-2xl font-bold text-slate-800">Thank you</h4>
+                                <div id="t2SampleSentence" class="text-xs text-slate-500 max-w-xs mx-auto italic font-chinese mt-2">謝謝你的幫助！</div>
+                            </div>
+
+                            <div class="w-full pt-2 border-t border-slate-100 flex justify-center gap-3">
+                                <button onclick="event.stopPropagation(); markMastered('t2')" id="t2MasterBtn" class="px-4 py-1.5 rounded-full text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white transition flex items-center gap-1 shadow">
+                                    <i class="fa-solid fa-check"></i> Mastered
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation Controls -->
+                <div class="flex items-center justify-between mt-6 px-2">
+                    <button onclick="prevCard('t2')" class="px-5 py-2.5 bg-white hover:bg-slate-100 text-slate-700 rounded-xl font-semibold border border-slate-200 transition shadow-sm flex items-center gap-2">
+                        <i class="fa-solid fa-arrow-left"></i> Previous
+                    </button>
+                    <span id="t2StatusText" class="text-xs font-medium text-slate-500">Card 1 of 20</span>
+                    <button onclick="nextCard('t2')" class="px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-semibold transition shadow-md shadow-teal-600/20 flex items-center gap-2">
+                        Next <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: Stroke Order Guide (筆順學習) -->
+        <section id="tab3" class="tab-panel space-y-6">
+            <div class="bg-white p-4 sm:p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800">Stroke Order & Writing Practice (筆順與寫字)</h2>
+                    <p class="text-xs text-slate-500">Select an essential TOCFL A1 character to observe stroke order step-by-step and practice tracing on the grid canvas.</p>
+                </div>
+                <!-- Character Picker Grid -->
+                <div class="flex flex-wrap gap-2" id="strokeCharPicker">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+
+            <!-- Interactive Stroke Workspace -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                
+                <!-- Character Meta & Breakdown Card -->
+                <div class="lg:col-span-5 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                        <div>
+                            <span id="strokePinyin" class="text-lg font-bold text-teal-600">wǒ</span>
+                            <h3 id="strokeCharTitle" class="text-5xl font-bold font-chinese text-slate-800">我</h3>
+                            <p id="strokeMeaning" class="text-sm font-medium text-slate-600 mt-1">I / Me</p>
+                        </div>
+                        <button onclick="speakStrokeChar()" class="w-12 h-12 rounded-full bg-teal-50 hover:bg-teal-100 text-teal-700 flex items-center justify-center text-lg transition border border-teal-200/50">
+                            <i class="fa-solid fa-volume-high"></i>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-3 text-center">
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase block">Total Strokes</span>
+                            <span id="strokeCount" class="text-lg font-bold text-slate-700">7 畫</span>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase block">Radical</span>
+                            <span id="strokeRadical" class="text-lg font-bold text-slate-700 font-chinese">戈 (戈部)</span>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-100">
+                            <span class="text-[10px] font-bold text-slate-400 uppercase block">Level</span>
+                            <span class="text-xs font-bold text-teal-700 bg-teal-100 px-2 py-0.5 rounded-md inline-block mt-1">TOCFL A1</span>
+                        </div>
+                    </div>
+
+                    <!-- Step-by-Step Sequence Breakdown -->
+                    <div>
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center justify-between">
+                            <span>Stroke Sequence Step-by-Step</span>
+                            <button onclick="animateStrokeSteps()" class="text-teal-600 hover:text-teal-700 text-xs font-semibold flex items-center gap-1">
+                                <i class="fa-solid fa-play"></i> Replay Animation
+                            </button>
+                        </h4>
+                        <div id="strokeStepContainer" class="flex flex-wrap gap-2">
+                            <!-- Populated dynamically with stroke sequence SVGs/Badges -->
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-amber-50 rounded-xl border border-amber-200/80 text-xs text-amber-800 space-y-1">
+                        <span class="font-bold flex items-center gap-1"><i class="fa-solid fa-lightbulb"></i> Writing Tip:</span>
+                        <p id="strokeWritingTip">Write from top to bottom, left to right. Horizontal strokes precede vertical ones.</p>
+                    </div>
+                </div>
+
+                <!-- Interactive Drawing / Tracing Canvas -->
+                <div class="lg:col-span-7 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4 flex flex-col items-center">
+                    <div class="w-full flex justify-between items-center">
+                        <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-hand-pointer text-teal-600"></i> Practice Canvas (米字格)
+                        </h3>
+                        <div class="flex items-center gap-2">
+                            <button onclick="toggleCanvasGuide()" id="btnGuideToggle" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-lg transition border border-slate-200">
+                                <i class="fa-solid fa-eye mr-1"></i> Toggle Guide
+                            </button>
+                            <button onclick="clearCanvas()" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-medium rounded-lg transition border border-rose-200">
+                                <i class="fa-solid fa-eraser mr-1"></i> Clear
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Canvas Wrapper with Traditional Grid -->
+                    <div class="relative w-72 h-72 sm:w-80 sm:h-80 border-2 border-red-300 rounded-xl mi-zi-ge overflow-hidden shadow-inner bg-white">
+                        <!-- Background Faint Guide Character -->
+                        <div id="canvasBackgroundChar" class="absolute inset-0 flex items-center justify-center font-chinese text-[180px] sm:text-[200px] text-red-200/60 select-none pointer-events-none font-bold">
+                            我
+                        </div>
+                        <canvas id="practiceCanvas" class="absolute inset-0 w-full h-full cursor-crosshair z-10"></canvas>
+                    </div>
+
+                    <p class="text-xs text-slate-400 text-center">Use your mouse or touch screen to trace over the guideline character.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: TOCFL A1 Sentence Pattern Builder -->
+        <section id="tab4" class="tab-panel space-y-6">
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800">Sentence Pattern Builder (句型練習)</h2>
+                    <p class="text-xs text-slate-500">Arrange scrambled word tiles into the grammatically correct Taiwan TOCFL A1 sentence structure.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-slate-500">Pattern:</span>
+                    <select id="sentencePatternSelect" onchange="loadSentencePattern()" class="bg-slate-50 border border-slate-300 text-slate-800 text-xs rounded-lg p-2 font-medium">
+                        <!-- Populated via JS -->
+                    </select>
+                </div>
+            </div>
+
+            <div class="max-w-3xl mx-auto bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-8">
+                <!-- Grammar Rule Banner -->
+                <div class="p-4 bg-teal-50 rounded-xl border border-teal-200/70 space-y-1">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold uppercase tracking-wider text-teal-800" id="patternTitle">Pattern Rule: 在 + Place + Verb</span>
+                        <span class="text-[10px] bg-teal-200 text-teal-900 px-2 py-0.5 rounded font-bold">Grammar Focus</span>
+                    </div>
+                    <p id="patternDescription" class="text-xs text-teal-900">In Mandarin, location structure always precedes the main verb action: [Subject] + 在 + [Place] + [Action Verb].</p>
+                </div>
+
+                <!-- Target English Goal -->
+                <div class="text-center space-y-1">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Translate this sentence</span>
+                    <h3 id="targetEnglishSentence" class="text-xl sm:text-2xl font-bold text-slate-800">"I study Mandarin at school."</h3>
+                </div>
+
+                <!-- Sentence Construction Drop Zone -->
+                <div class="space-y-2">
+                    <div class="text-xs font-semibold text-slate-500 flex justify-between">
+                        <span>Your Assembled Sentence:</span>
+                        <button onclick="resetSentenceTiles()" class="text-slate-400 hover:text-slate-600 text-xs flex items-center gap-1">
+                            <i class="fa-solid fa-rotate-left"></i> Reset Tiles
+                        </button>
+                    </div>
+                    <div id="dropZone" class="min-h-[72px] p-3 bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl flex flex-wrap gap-2 items-center justify-start transition">
+                        <!-- Selected word tiles appear here -->
+                    </div>
+                </div>
+
+                <!-- Scrambled Tile Palette -->
+                <div class="space-y-2">
+                    <span class="text-xs font-semibold text-slate-500">Tap tiles to construct answer:</span>
+                    <div id="tilePalette" class="flex flex-wrap gap-2 justify-center p-4 bg-slate-100/60 rounded-xl border border-slate-200">
+                        <!-- Scrambled clickable word tiles -->
+                    </div>
+                </div>
+
+                <!-- Check Answer & Feedback Bar -->
+                <div class="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div id="sentenceFeedback" class="text-xs font-bold flex items-center gap-2 text-slate-600 min-h-[24px]">
+                        <!-- Dynamic feedback message -->
+                    </div>
+                    <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+                        <button onclick="speakSentenceBuilder()" class="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition" title="Listen Sentence Pronunciation">
+                            <i class="fa-solid fa-volume-high"></i>
+                        </button>
+                        <button onclick="checkSentenceAnswer()" class="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold text-sm transition shadow-md shadow-teal-600/20">
+                            Verify Sentence
+                        </button>
+                        <button onclick="nextSentencePattern()" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-bold text-sm transition">
+                            Next Pattern <i class="fa-solid fa-arrow-right ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 5: Practice Test & Redo / Reset System -->
+        <section id="tab5" class="tab-panel space-y-6">
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800">TOCFL A1 Interactive Practice Exam</h2>
+                    <p class="text-xs text-slate-500">10-Question Comprehensive Test covering Vocabulary, Listening, and Taiwan Grammar Structures.</p>
+                </div>
+                <button onclick="startFreshQuiz()" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-lg transition shadow flex items-center gap-2">
+                    <i class="fa-solid fa-rotate-right"></i> Redo / Restart Test
+                </button>
+            </div>
+
+            <!-- Quiz Main Container -->
+            <div id="quizContainer" class="max-w-3xl mx-auto bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+                <!-- Quiz Progress Header -->
+                <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                    <div class="flex items-center gap-2">
+                        <span id="quizQuestionNum" class="text-xs font-bold bg-teal-100 text-teal-800 px-2.5 py-1 rounded-full">Question 1 of 10</span>
+                        <span id="quizTypeBadge" class="text-[10px] font-bold bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full uppercase">Vocabulary</span>
+                    </div>
+                    <span id="quizScoreTracker" class="text-xs font-semibold text-slate-500">Score: 0 / 10</span>
+                </div>
+
+                <!-- Question Prompt -->
+                <div class="space-y-4">
+                    <div class="flex items-start gap-3">
+                        <button onclick="speakQuizPrompt()" id="btnQuizAudio" class="mt-1 w-10 h-10 rounded-full bg-teal-50 hover:bg-teal-100 text-teal-700 flex-shrink-0 flex items-center justify-center transition border border-teal-200" title="Listen Prompt">
+                            <i class="fa-solid fa-volume-high"></i>
+                        </button>
+                        <div>
+                            <h3 id="quizQuestionText" class="text-lg sm:text-xl font-bold text-slate-800 leading-snug">
+                                What is the correct Traditional Chinese translation for "Convenience Store"?
+                            </h3>
+                            <p id="quizSubtext" class="text-xs text-slate-400 mt-1">Select the most accurate choice for Taiwan TOCFL standard.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Multiple Choice Options -->
+                <div id="quizOptionsGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                    <!-- Dynamic option buttons inserted here -->
+                </div>
+
+                <!-- Explanation Box -->
+                <div id="quizExplanation" class="hidden p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                    <span class="text-xs font-bold text-slate-700 block" id="quizResultTitle">Result</span>
+                    <p id="quizExplanationBody" class="text-xs text-slate-600">Explanation details will appear here.</p>
+                </div>
+
+                <!-- Quiz Action Footer -->
+                <div class="pt-4 border-t border-slate-100 flex justify-between items-center">
+                    <button onclick="startFreshQuiz()" class="text-xs font-semibold text-slate-500 hover:text-slate-800 flex items-center gap-1">
+                        <i class="fa-solid fa-arrows-rotate"></i> Restart Quiz
+                    </button>
+                    <button onclick="nextQuizQuestion()" id="btnNextQuiz" disabled class="px-6 py-2.5 bg-slate-300 text-white rounded-xl font-bold text-sm transition">
+                        Next Question
+                    </button>
+                </div>
+            </div>
+
+            <!-- Test Summary Modal / Card (Hidden by default) -->
+            <div id="quizSummaryCard" class="hidden max-w-xl mx-auto bg-white p-8 rounded-2xl border border-slate-200 shadow-xl text-center space-y-6">
+                <div class="w-20 h-20 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center text-3xl font-bold shadow-inner">
+                    <i class="fa-solid fa-trophy"></i>
+                </div>
+
+                <div class="space-y-2">
+                    <h3 class="text-2xl font-bold text-slate-800">TOCFL A1 Practice Test Completed!</h3>
+                    <p class="text-xs text-slate-500">Here is your final proficiency evaluation result:</p>
+                </div>
+
+                <div class="p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
+                    <div class="text-4xl font-extrabold text-teal-600" id="summaryScore">8 / 10</div>
+                    <div class="text-sm font-semibold text-slate-700" id="summaryFeedbackText">Great job! You have strong mastery of A1 basics.</div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                    <button onclick="startFreshQuiz()" class="px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm rounded-xl transition shadow-md shadow-teal-600/20 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-rotate-right"></i> Redo Test
+                    </button>
+                    <button onclick="switchTab('tab1')" class="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-xl transition flex items-center justify-center gap-2">
+                        Review Flashcards
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-4 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-400">
+            TOCFL A1 Mandarin Review System &bull; Designed for Taiwan Mandarin Learner Success
+        </div>
+    </footer>
+
+    <script>
+        // ==========================================
+        // 1. DATA STRUCTURES & VOCABULARY DATABASE
+        // ==========================================
+        
+        const vocabDatabase = [
+            // Greetings & Personal
+            { id: 1, category: 'greetings', char: '你好', pinyin: 'nǐ hǎo', english: 'Hello / Hi', sentence: '你好！很高興認識你。' },
+            { id: 2, category: 'greetings', char: '謝謝', pinyin: 'xiè xie', english: 'Thank you', sentence: '謝謝你的幫助！' },
+            { id: 3, category: 'greetings', char: '再見', pinyin: 'zài jiàn', english: 'Goodbye', sentence: '明天見，再見！' },
+            { id: 4, category: 'greetings', char: '對不起', pinyin: 'duì bù qǐ', english: 'Sorry / Excuse me', sentence: '對不起，我遲到了。' },
+            { id: 5, category: 'greetings', char: '沒關係', pinyin: 'méi guān xì', english: 'It\'s okay / No problem', sentence: '沒關係，不用客氣。' },
+            { id: 6, category: 'greetings', char: '名字', pinyin: 'míng zi', english: 'Name', sentence: '你叫什麼名字？' },
+            
+            // Food & Dining
+            { id: 7, category: 'food', char: '吃', pinyin: 'chī', english: 'To eat', sentence: '你想吃什麼？' },
+            { id: 8, category: 'food', char: '喝', pinyin: 'hē', english: 'To drink', sentence: '我要喝珍珠奶茶。' },
+            { id: 9, category: 'food', char: '水', pinyin: 'shuǐ', english: 'Water', sentence: '請給我一杯水。' },
+            { id: 10, category: 'food', char: '茶', pinyin: 'chá', english: 'Tea', sentence: '台灣的高山茶很好喝。' },
+            { id: 11, category: 'food', char: '牛肉麵', pinyin: 'niú ròu miàn', english: 'Beef Noodles', sentence: '台灣牛肉麵很有名。' },
+            { id: 12, category: 'food', char: '點菜', pinyin: 'diǎn cài', english: 'To order food', sentence: '老闆，我們要點菜！' },
+            
+            // Places & Transport
+            { id: 13, category: 'places', char: '超商', pinyin: 'chāo shāng', english: 'Convenience store', sentence: '我家旁邊有便利超商。' },
+            { id: 14, category: 'places', char: '計程車', pinyin: 'jì chéng chē', english: 'Taxi', sentence: '我們坐計程車去車站。' },
+            { id: 15, category: 'places', char: '捷運', pinyin: 'jié yùn', english: 'MRT / Subway', sentence: '搭捷運很方便。' },
+            { id: 16, category: 'places', char: '學校', pinyin: 'xué xiào', english: 'School', sentence: '我們在學校學習華語。' },
+            { id: 17, category: 'places', char: '家', pinyin: 'jiā', english: 'Home / Family', sentence: '歡迎來到我家！' },
+
+            // Time & Actions
+            { id: 18, category: 'actions', char: '買', pinyin: 'mǎi', english: 'To buy', sentence: '我要買這個手機。' },
+            { id: 19, category: 'actions', char: '學習', pinyin: 'xué xí', english: 'To study / learn', sentence: '我每天學習中文。' },
+            { id: 20, category: 'time', char: '今天', pinyin: 'jīn tiān', english: 'Today', sentence: '今天天氣很好。' }
+        ];
+
+        // Stroke Order Characters Data
+        const strokeDatabase = {
+            '我': { pinyin: 'wǒ', meaning: 'I / Me', count: '7 畫', radical: '戈部', tip: 'Write left slant first, then horizontal-hook, then center vertical hook.', steps: ['丿', '一', '丨', '提', '斜鉤', '撇', '點'] },
+            '你': { pinyin: 'nǐ', meaning: 'You', count: '7 畫', radical: '人部', tip: 'Start with person radical (亻) on left, then right component.', steps: ['丿', '丨', '丿', '橫撇', '丨', '亅', '點'] },
+            '他': { pinyin: 'tā', meaning: 'He / Him', count: '5 畫', radical: '人部', tip: 'Left side is person radical (亻), right side is 也.', steps: ['丿', '丨', '乛', '丨', '乚'] },
+            '吃': { pinyin: 'chī', meaning: 'To Eat', count: '6 畫', radical: '口部', tip: 'Mouth radical (口) on left, followed by 乞 on right.', steps: ['丨', '𠃍', '一', '丿', '橫折', '乚'] },
+            '喝': { pinyin: 'hē', meaning: 'To Drink', count: '12 畫', radical: '口部', tip: 'Left mouth radical (口), right top 日, bottom 包.', steps: ['丨', '𠃍', '一', '丨', '𠃍', '一', '一', '丿', '乛', '丨', '𠃍', '一'] },
+            '學': { pinyin: 'xué', meaning: 'To Study', count: '16 畫', radical: '子部', tip: 'Top crown dots first, middle cover, bottom child (子).', steps: ['丶', '丶', '丿', '丶', '乛', '冖', '乛', '亅', '一'] },
+            '校': { pinyin: 'xiào', meaning: 'School', count: '10 畫', radical: '木部', tip: 'Tree radical (木) on left, 交 on right.', steps: ['一', '丨', '丿', '丶', '丶', '一', '丿', '捺'] },
+            '家': { pinyin: 'jiā', meaning: 'Home', count: '10 畫', radical: '宀部', tip: 'Roof radical (宀) on top, pig radical (豕) below.', steps: ['丶', '丶', '乛', '一', '丿', '乛', '撇', '撇', '撇', '捺'] },
+            '好': { pinyin: 'hǎo', meaning: 'Good / Well', count: '6 畫', radical: '女部', tip: 'Woman radical (女) on left, Child (子) on right.', steps: ['𡤼', '撇', '一', '乛', '亅', '一'] },
+            '水': { pinyin: 'shuǐ', meaning: 'Water', count: '4 畫', radical: '水部', tip: 'Center vertical hook first, then left sweeps, then right.', steps: ['亅', '㇇', '撇', '捺'] }
+        };
+
+        // Sentence Patterns Data
+        const sentencePatterns = [
+            {
+                title: "在 + Place + Action Verb",
+                desc: "Expresses performing an action at a location. Pattern: [Subject] + 在 + [Place] + [Verb].",
+                english: "I study Mandarin at school.",
+                correct: ["我", "在", "學校", "學習", "華語"],
+                scrambled: ["學校", "我", "華語", "在", "學習"],
+                audio: "我在學校學習華語"
+            },
+            {
+                title: "Time + Subject + Action",
+                desc: "Time words appear before or right after the subject in Mandarin.",
+                english: "Tomorrow I want to buy a cell phone.",
+                correct: ["明天", "我", "要", "買", "手機"],
+                scrambled: ["要", "明天", "買", "手機", "我"],
+                audio: "明天我要買手機"
+            },
+            {
+                title: "Subject + 想 / 要 + Verb",
+                desc: "Expressing desire or intention to do something.",
+                english: "We would like to drink pearls milk tea.",
+                correct: ["我們", "想", "喝", "珍珠奶茶"],
+                scrambled: ["喝", "想", "珍珠奶茶", "我們"],
+                audio: "我想喝珍珠奶茶"
+            },
+            {
+                title: "太 + Adjective + 了",
+                desc: "Expresses 'too...' or 'extremely...' in Taiwan Mandarin.",
+                english: "Taiwan beef noodles are too delicious!",
+                correct: ["台灣", "牛肉麵", "太", "好吃", "了"],
+                scrambled: ["好吃", "牛肉麵", "了", "太", "台灣"],
+                audio: "台灣牛肉麵太好吃了"
+            }
+        ];
+
+        // Practice Quiz Database
+        const quizDatabase = [
+            {
+                type: "Vocabulary",
+                question: "What is the correct Taiwan Mandarin term for 'Convenience Store'?",
+                subtext: "Choose the standard expression used in Taiwan.",
+                options: ["超商 (便利商店)", "出租車", "公交車", "飯店"],
+                answer: 0,
+                explanation: "In Taiwan, convenience stores are widely called 超商 (chāoshāng) or 便利商店 (biànlì shāngdiàn)."
+            },
+            {
+                type: "Grammar",
+                question: "Which sentence correctly says 'I study Chinese at school'?",
+                subtext: "Check proper placement of location (在 + Place).",
+                options: ["我學習華語在學校。", "我在學校學習華語。", "學校我在學習華語。", "我華語學習在學校。"],
+                answer: 1,
+                explanation: "Mandarin requires [在 + Place] before the verb action: 我在學校學習華語。"
+            },
+            {
+                type: "Vocabulary",
+                question: "How do you say 'Taxi' in Taiwan?",
+                subtext: "Select the accurate regional term.",
+                options: ["單車", "計程車", "捷運", "高鐵"],
+                answer: 1,
+                explanation: "'Taxi' in Taiwan is 計程車 (jìchéngchē)."
+            },
+            {
+                type: "Pronunciation",
+                question: "What is the Pinyin for the word '謝謝' (Thank you)?",
+                subtext: "Identify the standard tone marks.",
+                options: ["xiè xie", "zài jiàn", "nǐ hǎo", "duì bù qǐ"],
+                answer: 0,
+                explanation: "謝謝 is pronounced 'xiè xie'."
+            },
+            {
+                type: "Grammar",
+                question: "Fill in the blank: 明天我 ____ 去夜市。(Tomorrow I want to go to the night market.)",
+                subtext: "Select the modal verb of intention.",
+                options: ["在", "要", "沒", "過"],
+                answer: 1,
+                explanation: "要 (yào) indicates 'want to / plan to' do something."
+            },
+            {
+                type: "Listening & Context",
+                question: "When someone says '對不起' (Sorry), what is the polite reply?",
+                subtext: "Select the matching response.",
+                options: ["沒關係 (It's okay)", "不客氣", "再見", "很高興"],
+                answer: 0,
+                explanation: "The standard polite response to '對不起' is '沒關係' (méi guān xì)."
+            },
+            {
+                type: "Vocabulary",
+                question: "What does '捷運' (jiéyùn) mean in Taiwan?",
+                subtext: "Public transportation vocabulary.",
+                options: ["High Speed Rail", "MRT / Subway", "Bus", "Bicycle"],
+                answer: 1,
+                explanation: "捷運 (jiéyùn) is Taiwan's Mass Rapid Transit (MRT / Subway)."
+            },
+            {
+                type: "Grammar",
+                question: "Choose the sentence that correctly uses '太...了' (Too / Extremely).",
+                subtext: "Exclamation structure.",
+                options: ["這個太貴了！", "這個太貴！", "太這個貴了！", "貴太這個了！"],
+                answer: 0,
+                explanation: "The structure is 太 + Adjective + 了: 這個太貴了！"
+            },
+            {
+                type: "Vocabulary",
+                question: "Which word means 'To order food' in a restaurant?",
+                subtext: "Dining vocabulary.",
+                options: ["買單", "結帳", "點菜", "好吃"],
+                answer: 2,
+                explanation: "點菜 (diǎncài) means 'to order food'."
+            },
+            {
+                type: "Culture & Usage",
+                question: "How is 'Garbage' pronounced in standard Taiwan Mandarin?",
+                subtext: "Note the Taiwanese Mandarin pronunciation rule.",
+                options: ["lājī", "lèsè", "lāsè", "lèjī"],
+                answer: 1,
+                explanation: "In Taiwan, 垃圾 (Garbage) is officially pronounced 'lèsè'."
+            }
+        ];
+
+        // App State
+        let state = {
+            t1Cards: [...vocabDatabase],
+            t1Index: 0,
+            t2Cards: [...vocabDatabase],
+            t2Index: 0,
+            masteredCards: new Set(),
+
+            // Stroke practice state
+            currentStrokeChar: '我',
+            guideVisible: true,
+
+            // Sentence builder state
+            currentPatternIndex: 0,
+            selectedTiles: [],
+
+            // Quiz State
+            quizQuestions: [...quizDatabase],
+            quizIndex: 0,
+            quizScore: 0,
+            userAnswers: []
+        };
+
+        // ==========================================
+        // 2. CORE UTILITIES & WEB SPEECH SYNTHESIS
+        // ==========================================
+        
+        function speakMandarin(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // Stop active speech
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'zh-TW';
+                utterance.rate = 0.85; // Slightly slower for language learners
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-teal-600', 'text-white', 'shadow-sm');
+                btn.classList.add('text-slate-600', 'hover:bg-slate-200/70');
+            });
+
+            const targetPanel = document.getElementById(tabId);
+            const targetBtn = document.getElementById('nav-' + tabId);
+
+            if (targetPanel) targetPanel.classList.add('active');
+            if (targetBtn) {
+                targetBtn.classList.add('bg-teal-600', 'text-white', 'shadow-sm');
+                targetBtn.classList.remove('text-slate-600', 'hover:bg-slate-200/70');
+            }
+
+            if (tabId === 'tab3') {
+                setTimeout(initCanvas, 50);
+            }
+        }
+
+        function flipCard(cardId) {
+            const card = document.getElementById(cardId);
+            if (card) card.classList.toggle('is-flipped');
+        }
+
+        // ==========================================
+        // 3. TAB 1 & TAB 2 FLASHCARD RENDERERS
+        // ==========================================
+
+        function renderTab1() {
+            if (state.t1Cards.length === 0) return;
+            const card = state.t1Cards[state.t1Index];
+            
+            document.getElementById('t1CategoryBadge').innerText = card.category;
+            document.getElementById('t1CardProgress').innerText = `${state.t1Index + 1} / ${state.t1Cards.length}`;
+            document.getElementById('t1EnglishText').innerText = card.english;
+            document.getElementById('t1ChineseText').innerText = card.char;
+            document.getElementById('t1PinyinText').innerText = card.pinyin;
+            document.getElementById('t1SampleSentence').innerText = card.sentence;
+            document.getElementById('t1StatusText').innerText = `Card ${state.t1Index + 1} of ${state.t1Cards.length}`;
+
+            // Reset flip state
+            document.getElementById('t1Card').classList.remove('is-flipped');
+
+            // Master button style
+            const isMastered = state.masteredCards.has(card.id);
+            const masterBtn = document.getElementById('t1MasterBtn');
+            if (isMastered) {
+                masterBtn.className = "px-4 py-1.5 rounded-full text-xs font-semibold bg-emerald-700 text-white flex items-center gap-1 shadow";
+                masterBtn.innerHTML = `<i class="fa-solid fa-circle-check"></i> Mastered!`;
+            } else {
+                masterBtn.className = "px-4 py-1.5 rounded-full text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white flex items-center gap-1 shadow";
+                masterBtn.innerHTML = `<i class="fa-solid fa-check"></i> Mark Mastered`;
+            }
+        }
+
+        function renderTab2() {
+            if (state.t2Cards.length === 0) return;
+            const card = state.t2Cards[state.t2Index];
+
+            document.getElementById('t2CategoryBadge').innerText = card.category;
+            document.getElementById('t2CardProgress').innerText = `${state.t2Index + 1} / ${state.t2Cards.length}`;
+            document.getElementById('t2ChineseText').innerText = card.char;
+            document.getElementById('t2PinyinText').innerText = card.pinyin;
+            document.getElementById('t2EnglishText').innerText = card.english;
+            document.getElementById('t2SampleSentence').innerText = card.sentence;
+            document.getElementById('t2StatusText').innerText = `Card ${state.t2Index + 1} of ${state.t2Cards.length}`;
+
+            document.getElementById('t2Card').classList.remove('is-flipped');
+
+            const isMastered = state.masteredCards.has(card.id);
+            const masterBtn = document.getElementById('t2MasterBtn');
+            if (isMastered) {
+                masterBtn.className = "px-4 py-1.5 rounded-full text-xs font-semibold bg-emerald-700 text-white flex items-center gap-1 shadow";
+                masterBtn.innerHTML = `<i class="fa-solid fa-circle-check"></i> Mastered!`;
+            } else {
+                masterBtn.className = "px-4 py-1.5 rounded-full text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-1 shadow";
+                masterBtn.innerHTML = `<i class="fa-solid fa-check"></i> Mark Mastered`;
+            }
+        }
+
+        function nextCard(tabKey) {
+            if (tabKey === 't1') {
+                state.t1Index = (state.t1Index + 1) % state.t1Cards.length;
+                renderTab1();
+            } else {
+                state.t2Index = (state.t2Index + 1) % state.t2Cards.length;
+                renderTab2();
+            }
+        }
+
+        function prevCard(tabKey) {
+            if (tabKey === 't1') {
+                state.t1Index = (state.t1Index - 1 + state.t1Cards.length) % state.t1Cards.length;
+                renderTab1();
+            } else {
+                state.t2Index = (state.t2Index - 1 + state.t2Cards.length) % state.t2Cards.length;
+                renderTab2();
+            }
+        }
+
+        function speakCurrentCard(tabKey) {
+            const card = tabKey === 't1' ? state.t1Cards[state.t1Index] : state.t2Cards[state.t2Index];
+            if (card) speakMandarin(card.char);
+        }
+
+        function markMastered(tabKey) {
+            const card = tabKey === 't1' ? state.t1Cards[state.t1Index] : state.t2Cards[state.t2Index];
+            if (!card) return;
+
+            if (state.masteredCards.has(card.id)) {
+                state.masteredCards.delete(card.id);
+            } else {
+                state.masteredCards.add(card.id);
+            }
+
+            document.getElementById('globalMasteredCount').innerText = state.masteredCards.size;
+            renderTab1();
+            renderTab2();
+        }
+
+        function filterFlashcards(tabKey) {
+            const selectId = tabKey === 't1' ? 't1CategoryFilter' : 't2CategoryFilter';
+            const val = document.getElementById(selectId).value;
+
+            const filtered = val === 'all' ? [...vocabDatabase] : vocabDatabase.filter(c => c.category === val);
+            
+            if (tabKey === 't1') {
+                state.t1Cards = filtered;
+                state.t1Index = 0;
+                renderTab1();
+            } else {
+                state.t2Cards = filtered;
+                state.t2Index = 0;
+                renderTab2();
+            }
+        }
+
+        function shuffleFlashcards(tabKey) {
+            if (tabKey === 't1') {
+                state.t1Cards.sort(() => Math.random() - 0.5);
+                state.t1Index = 0;
+                renderTab1();
+            } else {
+                state.t2Cards.sort(() => Math.random() - 0.5);
+                state.t2Index = 0;
+                renderTab2();
+            }
+        }
+
+        // ==========================================
+        // 4. TAB 3 STROKE ORDER & PRACTICE CANVAS
+        // ==========================================
+
+        function renderStrokePicker() {
+            const container = document.getElementById('strokeCharPicker');
+            container.innerHTML = '';
+
+            Object.keys(strokeDatabase).forEach(char => {
+                const btn = document.createElement('button');
+                const isSelected = char === state.currentStrokeChar;
+                btn.className = `w-10 h-10 rounded-xl font-chinese font-bold text-lg transition flex items-center justify-center border ${
+                    isSelected ? 'bg-teal-600 text-white border-teal-600 shadow-md' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
+                }`;
+                btn.innerText = char;
+                btn.onclick = () => selectStrokeChar(char);
+                container.appendChild(btn);
+            });
+        }
+
+        function selectStrokeChar(char) {
+            state.currentStrokeChar = char;
+            renderStrokePicker();
+
+            const data = strokeDatabase[char];
+            if (!data) return;
+
+            document.getElementById('strokeCharTitle').innerText = char;
+            document.getElementById('strokePinyin').innerText = data.pinyin;
+            document.getElementById('strokeMeaning').innerText = data.meaning;
+            document.getElementById('strokeCount').innerText = data.count;
+            document.getElementById('strokeRadical').innerText = data.radical;
+            document.getElementById('strokeWritingTip').innerText = data.tip;
+            document.getElementById('canvasBackgroundChar').innerText = char;
+
+            // Render Stroke Step Sequence
+            const stepContainer = document.getElementById('strokeStepContainer');
+            stepContainer.innerHTML = '';
+            data.steps.forEach((step, idx) => {
+                const badge = document.createElement('div');
+                badge.className = 'flex flex-col items-center justify-center w-11 h-11 bg-slate-100 border border-slate-200 rounded-lg shadow-sm';
+                badge.innerHTML = `<span class="text-[9px] text-slate-400 font-bold">#${idx+1}</span><span class="text-sm font-bold text-teal-700 font-chinese">${step}</span>`;
+                stepContainer.appendChild(badge);
+            });
+
+            clearCanvas();
+            speakMandarin(char);
+        }
+
+        function speakStrokeChar() {
+            speakMandarin(state.currentStrokeChar);
+        }
+
+        function animateStrokeSteps() {
+            const container = document.getElementById('strokeStepContainer');
+            const children = container.children;
+            for (let i = 0; i < children.length; i++) {
+                children[i].style.opacity = '0.2';
+                setTimeout(() => {
+                    children[i].style.opacity = '1';
+                    children[i].classList.add('scale-110');
+                    setTimeout(() => children[i].classList.remove('scale-110'), 200);
+                }, i * 250);
+            }
+        }
+
+        // Canvas Drawing Logic
+        let canvas, ctx, isDrawing = false;
+
+        function initCanvas() {
+            canvas = document.getElementById('practiceCanvas');
+            if (!canvas) return;
+            ctx = canvas.getContext('2d');
+
+            // Responsive sizing
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+
+            ctx.strokeStyle = '#0f766e'; // Teal stroke
+            ctx.lineWidth = 10;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // Touch & Mouse Event Listeners
+            canvas.onmousedown = startDrawing;
+            canvas.onmousemove = draw;
+            canvas.onmouseup = stopDrawing;
+            canvas.onmouseleave = stopDrawing;
+
+            canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+            canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+            canvas.addEventListener('touchend', stopDrawing);
+        }
+
+        function startDrawing(e) {
+            isDrawing = true;
+            ctx.beginPath();
+            const pos = getPos(e);
+            ctx.moveTo(pos.x, pos.y);
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            const pos = getPos(e);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+        }
+
+        function handleTouchStart(e) {
+            e.preventDefault();
+            if (e.touches.length > 0) {
+                const touch = e.touches[0];
+                startDrawing(touch);
+            }
+        }
+
+        function handleTouchMove(e) {
+            e.preventDefault();
+            if (e.touches.length > 0) {
+                const touch = e.touches[0];
+                draw(touch);
+            }
+        }
+
+        function getPos(evt) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: (evt.clientX || evt.pageX) - rect.left,
+                y: (evt.clientY || evt.pageY) - rect.top
+            };
+        }
+
+        function clearCanvas() {
+            if (ctx && canvas) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+
+        function toggleCanvasGuide() {
+            state.guideVisible = !state.guideVisible;
+            const bgChar = document.getElementById('canvasBackgroundChar');
+            bgChar.style.opacity = state.guideVisible ? '0.6' : '0.05';
+        }
+
+        // ==========================================
+        // 5. TAB 4 SENTENCE PATTERN BUILDER
+        // ==========================================
+
+        function initSentencePatterns() {
+            const select = document.getElementById('sentencePatternSelect');
+            select.innerHTML = '';
+
+            sentencePatterns.forEach((p, idx) => {
+                const opt = document.createElement('option');
+                opt.value = idx;
+                opt.innerText = p.title;
+                select.appendChild(opt);
+            });
+
+            loadSentencePattern();
+        }
+
+        function loadSentencePattern() {
+            const select = document.getElementById('sentencePatternSelect');
+            state.currentPatternIndex = parseInt(select.value) || 0;
+            const p = sentencePatterns[state.currentPatternIndex];
+
+            document.getElementById('patternTitle').innerText = "Pattern Rule: " + p.title;
+            document.getElementById('patternDescription').innerText = p.desc;
+            document.getElementById('targetEnglishSentence').innerText = `"${p.english}"`;
+
+            state.selectedTiles = [];
+            document.getElementById('sentenceFeedback').innerHTML = '';
+
+            renderSentenceTiles();
+        }
+
+        function renderSentenceTiles() {
+            const p = sentencePatterns[state.currentPatternIndex];
+            const dropZone = document.getElementById('dropZone');
+            const tilePalette = document.getElementById('tilePalette');
+
+            dropZone.innerHTML = '';
+            tilePalette.innerHTML = '';
+
+            if (state.selectedTiles.length === 0) {
+                dropZone.innerHTML = `<span class="text-xs text-slate-400 italic">Tap tiles below to construct the sentence...</span>`;
+            } else {
+                state.selectedTiles.forEach((word, index) => {
+                    const tile = document.createElement('button');
+                    tile.className = 'px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-base font-bold font-chinese rounded-xl shadow-sm transition flex items-center gap-1.5';
+                    tile.innerHTML = `<span>${word}</span> <i class="fa-solid fa-xmark text-xs opacity-70"></i>`;
+                    tile.onclick = () => removeTile(index);
+                    dropZone.appendChild(tile);
+                });
+            }
+
+            // Available scrambled palette
+            p.scrambled.forEach((word) => {
+                const countInSelected = state.selectedTiles.filter(w => w === word).length;
+                const countInScrambled = p.scrambled.filter(w => w === word).length;
+
+                const isUsed = countInSelected >= countInScrambled;
+
+                const tile = document.createElement('button');
+                tile.disabled = isUsed;
+                tile.className = `px-4 py-2.5 rounded-xl font-chinese font-bold text-base transition ${
+                    isUsed ? 'bg-slate-200 text-slate-400 border border-slate-200 cursor-not-allowed opacity-50' : 'bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 shadow-sm hover:border-teal-500'
+                }`;
+                tile.innerText = word;
+                tile.onclick = () => selectTile(word);
+                tilePalette.appendChild(tile);
+            });
+        }
+
+        function selectTile(word) {
+            state.selectedTiles.push(word);
+            renderSentenceTiles();
+        }
+
+        function removeTile(index) {
+            state.selectedTiles.splice(index, 1);
+            renderSentenceTiles();
+        }
+
+        function resetSentenceTiles() {
+            state.selectedTiles = [];
+            document.getElementById('sentenceFeedback').innerHTML = '';
+            renderSentenceTiles();
+        }
+
+        function checkSentenceAnswer() {
+            const p = sentencePatterns[state.currentPatternIndex];
+            const isCorrect = JSON.stringify(state.selectedTiles) === JSON.stringify(p.correct);
+
+            const feedback = document.getElementById('sentenceFeedback');
+            if (isCorrect) {
+                feedback.className = "text-xs font-bold flex items-center gap-2 text-emerald-600";
+                feedback.innerHTML = `<i class="fa-solid fa-circle-check text-base"></i> Excellent! Grammatically correct.`;
+                speakMandarin(p.audio);
+            } else {
+                feedback.className = "text-xs font-bold flex items-center gap-2 text-rose-600";
+                feedback.innerHTML = `<i class="fa-solid fa-circle-xmark text-base"></i> Incorrect order. Try again!`;
+            }
+        }
+
+        function speakSentenceBuilder() {
+            const p = sentencePatterns[state.currentPatternIndex];
+            speakMandarin(p.audio);
+        }
+
+        function nextSentencePattern() {
+            state.currentPatternIndex = (state.currentPatternIndex + 1) % sentencePatterns.length;
+            document.getElementById('sentencePatternSelect').value = state.currentPatternIndex;
+            loadSentencePattern();
+        }
+
+        // ==========================================
+        // 6. TAB 5 PRACTICE TEST & RESET SYSTEM
+        // ==========================================
+
+        function startFreshQuiz() {
+            state.quizQuestions = [...quizDatabase].sort(() => Math.random() - 0.5);
+            state.quizIndex = 0;
+            state.quizScore = 0;
+            state.userAnswers = [];
+
+            document.getElementById('quizSummaryCard').classList.add('hidden');
+            document.getElementById('quizContainer').classList.remove('hidden');
+
+            renderQuizQuestion();
+        }
+
+        function renderQuizQuestion() {
+            const q = state.quizQuestions[state.quizIndex];
+            
+            document.getElementById('quizQuestionNum').innerText = `Question ${state.quizIndex + 1} of ${state.quizQuestions.length}`;
+            document.getElementById('quizTypeBadge').innerText = q.type;
+            document.getElementById('quizScoreTracker').innerText = `Score: ${state.quizScore} / ${state.quizQuestions.length}`;
+            document.getElementById('quizQuestionText').innerText = q.question;
+            document.getElementById('quizSubtext').innerText = q.subtext;
+
+            document.getElementById('quizExplanation').classList.add('hidden');
+            const btnNext = document.getElementById('btnNextQuiz');
+            btnNext.disabled = true;
+            btnNext.className = "px-6 py-2.5 bg-slate-300 text-white rounded-xl font-bold text-sm transition";
+
+            const grid = document.getElementById('quizOptionsGrid');
+            grid.innerHTML = '';
+
+            q.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "p-4 text-left rounded-xl border border-slate-200 bg-slate-50/80 hover:bg-teal-50 hover:border-teal-400 font-semibold text-slate-800 text-sm transition flex items-center justify-between group";
+                btn.innerHTML = `<span>${opt}</span> <i class="fa-regular fa-circle text-slate-400 group-hover:text-teal-600"></i>`;
+                btn.onclick = () => selectQuizOption(idx);
+                grid.appendChild(btn);
+            });
+        }
+
+        function selectQuizOption(optionIdx) {
+            const q = state.quizQuestions[state.quizIndex];
+            const isCorrect = optionIdx === q.answer;
+
+            if (isCorrect) state.quizScore++;
+
+            const options = document.getElementById('quizOptionsGrid').children;
+            for (let i = 0; i < options.length; i++) {
+                options[i].disabled = true;
+                if (i === q.answer) {
+                    options[i].className = "p-4 text-left rounded-xl border-2 border-emerald-500 bg-emerald-50 font-bold text-emerald-900 text-sm flex items-center justify-between";
+                    options[i].querySelector('i').className = "fa-solid fa-circle-check text-emerald-600";
+                } else if (i === optionIdx) {
+                    options[i].className = "p-4 text-left rounded-xl border-2 border-rose-500 bg-rose-50 font-bold text-rose-900 text-sm flex items-center justify-between";
+                    options[i].querySelector('i').className = "fa-solid fa-circle-xmark text-rose-600";
+                } else {
+                    options[i].className = "p-4 text-left rounded-xl border border-slate-200 bg-slate-100 text-slate-400 text-sm opacity-60 flex items-center justify-between";
+                }
+            }
+
+            // Show explanation
+            const exp = document.getElementById('quizExplanation');
+            exp.classList.remove('hidden');
+            document.getElementById('quizResultTitle').innerText = isCorrect ? "✓ Correct!" : "✗ Incorrect";
+            document.getElementById('quizResultTitle').className = `text-xs font-bold block ${isCorrect ? 'text-emerald-700' : 'text-rose-700'}`;
+            document.getElementById('quizExplanationBody').innerText = q.explanation;
+
+            // Enable Next
+            const btnNext = document.getElementById('btnNextQuiz');
+            btnNext.disabled = false;
+            btnNext.className = "px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold text-sm transition shadow-md shadow-teal-600/20";
+
+            // Update global accuracy header
+            const pct = Math.round((state.quizScore / (state.quizIndex + 1)) * 100);
+            document.getElementById('globalScorePercent').innerText = `${pct}%`;
+        }
+
+        function nextQuizQuestion() {
+            state.quizIndex++;
+            if (state.quizIndex >= state.quizQuestions.length) {
+                showQuizSummary();
+            } else {
+                renderQuizQuestion();
+            }
+        }
+
+        function speakQuizPrompt() {
+            const q = state.quizQuestions[state.quizIndex];
+            speakMandarin(q.question);
+        }
+
+        function showQuizSummary() {
+            document.getElementById('quizContainer').classList.add('hidden');
+            const summary = document.getElementById('quizSummaryCard');
+            summary.classList.remove('hidden');
+
+            document.getElementById('summaryScore').innerText = `${state.quizScore} / ${state.quizQuestions.length}`;
+            
+            const pct = (state.quizScore / state.quizQuestions.length) * 100;
+            let msg = "Keep practicing! Review flashcards to reinforce vocabulary.";
+            if (pct >= 80) msg = "Outstanding! You are well prepared to surpass TOCFL A1!";
+            else if (pct >= 60) msg = "Good effort! A little more grammar review and you'll clear A1 easily.";
+
+            document.getElementById('summaryFeedbackText').innerText = msg;
+        }
+
+        function resetAllAppData() {
+            if (confirm("Reset all learning progress, mastered flashcards, and test scores?")) {
+                state.masteredCards.clear();
+                document.getElementById('globalMasteredCount').innerText = '0';
+                document.getElementById('globalScorePercent').innerText = '0%';
+                
+                state.t1Cards = [...vocabDatabase];
+                state.t1Index = 0;
+                state.t2Cards = [...vocabDatabase];
+                state.t2Index = 0;
+
+                renderTab1();
+                renderTab2();
+                startFreshQuiz();
+            }
+        }
+
+        // Global Keyboard Shortcut Support
+        document.addEventListener('keydown', (e) => {
+            const activeTab = document.querySelector('.tab-panel.active').id;
+            if (e.code === 'Space') {
+                if (activeTab === 'tab1') {
+                    flipCard('t1Card');
+                    e.preventDefault();
+                } else if (activeTab === 'tab2') {
+                    flipCard('t2Card');
+                    e.preventDefault();
+                }
+            } else if (e.code === 'ArrowRight') {
+                if (activeTab === 'tab1') nextCard('t1');
+                if (activeTab === 'tab2') nextCard('t2');
+            } else if (e.code === 'ArrowLeft') {
+                if (activeTab === 'tab1') prevCard('t1');
+                if (activeTab === 'tab2') prevCard('t2');
+            }
+        });
+
+        // Initialize App on Window Load
+        window.onload = function() {
+            renderTab1();
+            renderTab2();
+            renderStrokePicker();
+            selectStrokeChar('我');
+            initSentencePatterns();
+            startFreshQuiz();
+            window.addEventListener('resize', initCanvas);
+        };
+    </script>
+</body>
+</html>
